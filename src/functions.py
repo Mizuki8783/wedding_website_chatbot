@@ -32,7 +32,13 @@ def retrieve_relevant_info(query):
     retrieved_docs = retriever.invoke(query)
     retrieved_info = ""
     for i, doc in enumerate(retrieved_docs):
-        retrieved_info += f"doc_number:{i+1}\n\nblog_title: {doc.metadata["title"]}. \n\npage_content: {doc.page_content}.\n\n summary: {doc.metadata["summary"]}.\n\n URL: {doc.metadata["sourceURL"]}.\n\n"
+        doc_num = i+1
+        blog_title = doc.metadata["title"]
+        page_content = doc.page_content
+        summary = doc.metadata["summary"]
+        url = doc.metadata["sourceURL"]
+
+        retrieved_info += f"doc_number:{doc_num}\n\nblog_title: {blog_title}. \n\npage_content: {page_content}.\n\n summary: {summary}.\n\n URL: {url}.\n\n"
 
     return retrieved_info
 
