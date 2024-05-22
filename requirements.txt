@@ -10,3 +10,5 @@ jupyter
 firecrawl-py
 pydantic
 tiktoken
+matplotlib
+seaborn

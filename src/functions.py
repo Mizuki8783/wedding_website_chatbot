@@ -1,3 +1,4 @@
+from langchain.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.tools.retriever import create_retriever_tool
 from langchain_pinecone import PineconeVectorStore
@@ -7,25 +8,33 @@ from langchain import hub
 from langchain.prompts import SystemMessagePromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
 
-
 from prompts import agent_system_prompt
 
-def connect_to_retriever():
-    embeddings = OpenAIEmbeddings()
-    vstore = PineconeVectorStore(index_name="wedding-website",embedding=embeddings)
-    retriever = vstore.as_retriever()
+embeddings = OpenAIEmbeddings()
+vstore = PineconeVectorStore(index_name="wedding-website",embedding=embeddings)
+retriever = vstore.as_retriever(search_type="mmr",)
 
-    return retriever
+@tool
+def retrieve_relevant_info(query):
+    """
+    Retrieves relevant information to answer the given query.
 
-def turn_retriever_into_tool():
-    retriever = connect_to_retriever()
-    retriever_tool= create_retriever_tool(
-        retriever,
-        "wedding_ideas_and_trend_search",
-        "Search for information about wedding related ideas and trend. For any questions related to wedding and wedding planning, you MUST use this tool!"
-        )
+    Args:
+        query (str): The query used to search for relevant information.
+    Returns:
+        str: A string containing the retrieved information. Each piece of information is formatted as follows:
+        - doc_number:<number>
+        - blog_title: <title>
+        - page_content: <content>
+        - summary: <summary>
+        - URL: <URL>
+    """
+    retrieved_docs = retriever.invoke(query)
+    retrieved_info = ""
+    for i, doc in enumerate(retrieved_docs):
+        retrieved_info += f"doc_number:{i+1}\n\nblog_title: {doc.metadata["title"]}. \n\npage_content: {doc.page_content}.\n\n summary: {doc.metadata["summary"]}.\n\n URL: {doc.metadata["sourceURL"]}.\n\n"
 
-    return retriever_tool
+    return retrieved_info
 
 def modify_prompt():
     prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -38,12 +47,11 @@ def modify_prompt():
 
 def create_agent():
     llm = ChatOpenAI(model="gpt-4o",temperature=0)
-    retriever_tool = turn_retriever_into_tool()
-    tools = [retriever_tool]
+    tools = [retrieve_relevant_info]
     prompt = modify_prompt()
 
     agent_base = create_tool_calling_agent(llm, tools, prompt)
-    agent = AgentExecutor(agent=agent_base, tools=tools)
+    agent = AgentExecutor(agent=agent_base, tools=tools, verbose=True)
 
     return agent
 
