@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import os
 load_dotenv()
 
 from flask import Flask, request, jsonify
@@ -25,4 +26,4 @@ def chat():
   return jsonify({"response": response})
 
 if __name__ == '__main__':
-  app.run()
+  app.run(port=os.getenv("PORT", default=5000)) #port variable is given by railway
